@@ -12,7 +12,7 @@ export function AuthShell({
   name,
   quote,
   caption,
-  image = '/imgs/studio/drift-1.webp',
+  image = '/imgs/studio/auth-still.webp',
   children,
 }: {
   name: string;

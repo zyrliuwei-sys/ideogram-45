@@ -13,9 +13,9 @@ export function HowItWorks() {
       <div className="mx-auto grid max-w-6xl items-center gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:gap-16">
         <Reveal className="proof order-2 lg:order-1">
           <img
-            src="/imgs/studio/proofs.webp"
-            width={1312}
-            height={736}
+            src="/imgs/studio/how-desk.webp"
+            width={1400}
+            height={1050}
             alt=""
             loading="lazy"
             className="aspect-[4/3] w-full rounded-2xl border border-white/10 object-cover"

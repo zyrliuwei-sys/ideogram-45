@@ -7,9 +7,9 @@ export function CTA() {
   return (
     <section className="relative isolate overflow-hidden px-4 py-24 sm:py-32">
       <img
-        src="/imgs/studio/hero-bg.webp"
-        width={1312}
-        height={736}
+        src="/imgs/studio/cta-gallery.webp"
+        width={1400}
+        height={788}
         alt=""
         loading="lazy"
         className="absolute inset-0 -z-10 size-full object-cover opacity-30 saturate-[0.85]"

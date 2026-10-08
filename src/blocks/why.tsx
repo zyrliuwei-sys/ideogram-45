@@ -93,10 +93,10 @@ export function Why() {
           <div className="proof proof-lock mt-8">
             <div className="relative aspect-[4/3] overflow-hidden rounded-2xl border border-white/10">
               <img
-                src="/imgs/studio/drift-1.webp"
-                width={1152}
-                height={864}
-                alt={m['landing.drift.step_1']()}
+                src="/imgs/studio/why-loupe.webp"
+                width={1400}
+                height={1050}
+                alt=""
                 loading="lazy"
                 className="absolute inset-0 size-full object-cover"
               />

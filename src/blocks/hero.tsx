@@ -3,7 +3,7 @@ import { ArrowRight } from 'lucide-react';
 import { m } from '@/paraglide/messages.js';
 import { BeforeAfter } from '@/components/before-after';
 
-export const HERO_IMAGE = '/imgs/studio/drift-3.webp';
+export const HERO_IMAGE = '/imgs/studio/hero-after.webp';
 
 export function Hero() {
   return (
@@ -41,13 +41,13 @@ export function Hero() {
 
         <div className="proof">
           <BeforeAfter
-            before="/imgs/studio/drift-0.webp"
+            before="/imgs/studio/hero-before.webp"
             after={HERO_IMAGE}
             beforeLabel={m['landing.hero.before']()}
             afterLabel={m['landing.hero.after']()}
             ariaLabel={m['landing.hero.drag']()}
-            width={1152}
-            height={864}
+            width={1400}
+            height={1050}
             priority
             className="border border-white/10"
           />

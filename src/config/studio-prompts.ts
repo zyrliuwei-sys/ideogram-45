@@ -1,19 +1,20 @@
 /**
  * Prompts behind the homepage examples, the "Random" button and the showcase
- * cards. Kept in English — the model follows English prompts most reliably.
+ * cards (each showcase image was generated from the prompt at the same index).
+ * Kept in English: the model follows English prompts most reliably.
  */
 export const EXAMPLE_PROMPTS = [
-  'A vintage two-color letterpress poster taped to a pale plaster wall. Bold condensed headline "SECOND PASS" in burnt orange, smaller line "a night of quiet music" in ink blue, and "OCT 30 · HALL 4" at the bottom. Paper grain, soft daylight, photographed straight on.',
-  'Product photograph of an amber glass honey jar with a kraft paper label. The label reads "NORTH FIELD" in elegant serif capitals and "WILDFLOWER HONEY" in small spaced caps below. Linen cloth, dried wildflowers, soft morning window light.',
-  'A small corner bookshop at blue hour in light rain. Hand-painted gold lettering on the window reads "OPEN LATE" with a smaller line "books & coffee". Warm light inside, reflections on wet cobblestones, cinematic photograph.',
+  'A large Swiss-style typographic exhibition poster pasted on a smooth concrete gallery wall, bold black headline "FORM & LIGHT", a single orange circle, small text "Museum of Design, Spring 2027", crisp print, daylight from a high window.',
+  'A short dark green glass olive oil bottle with a wide horizontal cream paper label printed with "OLIO NERO" in large black serif capitals, on a weathered oak table with olive branches, soft morning window light.',
+  'Brass lettering "THE ALDER HOTEL" mounted on a dark green travertine wall in an elegant hotel lobby at night, warm wall washer light, polished stone floor reflections, architectural interior photography.',
 ];
 
 export const RANDOM_PROMPTS = [
   ...EXAMPLE_PROMPTS,
-  'A cloth-bound hardcover book on a dark walnut desk, deep forest green cover with large cream typography reading "THE QUIET EDIT" and a small line "essays on making things". Brass lamp glow, editorial still life.',
-  'Minimal commercial product photo of a single white running sneaker floating above a warm sand colored seamless background, soft contact shadow, studio lighting.',
-  'Calm Scandinavian living room, oak sideboard, cream boucle armchair, large window with soft morning light, ceramic vases, architectural digest photography.',
-  'A neon sign in a dark ramen bar window reading "LATE NOODLES" in pink cursive, steam rising from a bowl on the counter, rainy street reflections, 35mm film look.',
-  'Flat-lay of a wedding invitation suite on handmade cotton paper, letterpress type reading "ANNA & THEO" and "June 14, 2027", eucalyptus sprigs, soft natural shadows.',
-  'An isometric cutaway illustration of a tiny two-floor coffee roastery, warm palette, clean lines, small sign on the roof reading "ROAST HOUSE".',
+  'A luxury independent magazine lying on a linen tablecloth, matte cover with a large black serif masthead reading "QUIET" and a cover photo of a ceramic vase, soft natural light, still life.',
+  'Macro product photograph of a slim steel wristwatch with a deep green sunburst dial resting on folded charcoal leather, precise reflections, dark studio background, luxury advertising.',
+  'Minimalist living room with travertine walls, a low boucle sofa, a sculptural oak coffee table and a single branch in a stone vase, late afternoon sunlight casting long soft shadows, architectural photography.',
+  'A sculptural black glass perfume bottle on a slab of dark green marble, with a small cream paper label printed "NOIR 04" in elegant thin serif capitals, warm rim light, deep charcoal background.',
+  'A letterpress wedding invitation on thick handmade cotton paper with deckled edges, the words "ELENA & MARC" pressed deeply in navy serif capitals, a sprig of olive and a silk ribbon, overhead soft light.',
+  'Three identical frosted glass skincare bottles on a pale limestone shelf, labeled "No. 1", "No. 2" and "No. 3" in thin black type, soft diffused daylight, calm luxury product photography.',
 ];

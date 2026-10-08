@@ -10,23 +10,23 @@ export function Features() {
     {
       title: m['landing.features.f1_title'](),
       desc: m['landing.features.f1_desc'](),
-      src: '/imgs/studio/variants.webp',
-      width: 1152,
-      height: 864,
+      src: '/imgs/studio/feature-variants.webp',
+      width: 1400,
+      height: 1050,
     },
     {
       title: m['landing.features.f2_title'](),
       desc: m['landing.features.f2_desc'](),
-      src: '/imgs/studio/show-poster.webp',
-      width: 864,
-      height: 1152,
+      src: '/imgs/studio/feature-type.webp',
+      width: 1400,
+      height: 1050,
     },
     {
       title: m['landing.features.f3_title'](),
       desc: m['landing.features.f3_desc'](),
-      src: '/imgs/studio/feature-refs.webp',
-      width: 1152,
-      height: 864,
+      src: '/imgs/studio/feature-brush.webp',
+      width: 1400,
+      height: 1050,
     },
   ];
   const [active, setActive] = useState(0);
