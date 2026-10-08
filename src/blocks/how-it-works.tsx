@@ -14,6 +14,8 @@ export function HowItWorks() {
         <Reveal className="proof order-2 lg:order-1">
           <img
             src="/imgs/studio/proofs.webp"
+            width={1312}
+            height={736}
             alt=""
             loading="lazy"
             className="aspect-[4/3] w-full rounded-2xl border border-white/10 object-cover"

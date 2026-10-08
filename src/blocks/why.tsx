@@ -94,6 +94,8 @@ export function Why() {
             <div className="relative aspect-[4/3] overflow-hidden rounded-2xl border border-white/10">
               <img
                 src="/imgs/studio/drift-1.webp"
+                width={1152}
+                height={864}
                 alt={m['landing.drift.step_1']()}
                 loading="lazy"
                 className="absolute inset-0 size-full object-cover"

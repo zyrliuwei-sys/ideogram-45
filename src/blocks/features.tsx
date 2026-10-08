@@ -11,16 +11,22 @@ export function Features() {
       title: m['landing.features.f1_title'](),
       desc: m['landing.features.f1_desc'](),
       src: '/imgs/studio/variants.webp',
+      width: 1152,
+      height: 864,
     },
     {
       title: m['landing.features.f2_title'](),
       desc: m['landing.features.f2_desc'](),
       src: '/imgs/studio/show-poster.webp',
+      width: 864,
+      height: 1152,
     },
     {
       title: m['landing.features.f3_title'](),
       desc: m['landing.features.f3_desc'](),
       src: '/imgs/studio/feature-refs.webp',
+      width: 1152,
+      height: 864,
     },
   ];
   const [active, setActive] = useState(0);
@@ -80,6 +86,8 @@ export function Features() {
                   key={item.src}
                   src={item.src}
                   alt={item.title}
+                  width={item.width}
+                  height={item.height}
                   loading="lazy"
                   className={cn(
                     'absolute inset-0 size-full object-cover transition-opacity duration-500',
