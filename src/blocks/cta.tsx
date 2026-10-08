@@ -1,35 +1,35 @@
 import { ArrowRight } from 'lucide-react';
 
-import { Link } from '@/core/i18n/navigation';
-import { cn } from '@/lib/utils';
 import { m } from '@/paraglide/messages.js';
-import { buttonVariants } from '@/components/ui/button';
+import { Reveal } from '@/components/reveal';
 
 export function CTA() {
   return (
-    <section className="px-4 pb-24 sm:pb-24">
-      <div className="mx-auto max-w-5xl">
-        <div className="rounded-3xl border border-dashed px-6 py-12 text-center sm:px-10 sm:py-16">
-          <h2 className="mx-auto max-w-3xl font-serif text-4xl leading-[1.1] font-medium tracking-tight sm:text-5xl lg:text-5xl">
-            {m['landing.cta.headline']()}
+    <section className="relative isolate overflow-hidden px-4 py-24 sm:py-32">
+      <img
+        src="/imgs/studio/hero-bg.webp"
+        alt=""
+        loading="lazy"
+        className="absolute inset-0 -z-10 size-full object-cover opacity-30 saturate-[0.85]"
+      />
+      <div className="from-background via-background/85 to-background/40 absolute inset-0 -z-10 bg-gradient-to-r" />
+      <Reveal className="mx-auto max-w-6xl">
+        <div className="max-w-xl">
+          <h2 className="text-3xl leading-[1.05] font-bold sm:text-[2.75rem]">
+            {m['landing.cta.title']()}
           </h2>
-          <p className="text-muted-foreground mx-auto mt-6 max-w-4xl text-base leading-relaxed sm:text-lg">
-            {m['landing.cta.subheadline']()}
+          <p className="text-foreground/75 mt-5 text-lg leading-relaxed">
+            {m['landing.cta.description']()}
           </p>
-          <div className="mt-8 flex justify-center">
-            <Link
-              href="/settings"
-              className={cn(
-                buttonVariants({ size: 'lg' }),
-                'h-12 gap-2 rounded-full px-8'
-              )}
-            >
-              {m['landing.cta.button']()}
-              <ArrowRight className="size-4" />
-            </Link>
-          </div>
+          <a
+            href="/#create"
+            className="bg-primary text-primary-foreground hover:bg-primary/90 mt-8 inline-flex items-center gap-2 rounded-xl px-6 py-3 font-semibold whitespace-nowrap"
+          >
+            {m['landing.cta.button']()}
+            <ArrowRight className="size-4" />
+          </a>
         </div>
-      </div>
+      </Reveal>
     </section>
   );
 }

@@ -1,56 +1,94 @@
-import {
-  Coins,
-  CreditCard,
-  FileText,
-  Globe,
-  ShieldCheck,
-  Users,
-  type LucideIcon,
-} from 'lucide-react';
+import { useState } from 'react';
 
-import { tDynamic } from '@/core/i18n/dynamic';
+import { cn } from '@/lib/utils';
 import { m } from '@/paraglide/messages.js';
+import { Reveal } from '@/components/reveal';
 
+/** Feature switcher: pick a habit on the left, see it on the right. */
 export function Features() {
-  const features: { key: string; icon: LucideIcon }[] = [
-    { key: 'auth', icon: ShieldCheck },
-    { key: 'payment', icon: CreditCard },
-    { key: 'rbac', icon: Users },
-    { key: 'i18n', icon: Globe },
-    { key: 'cms', icon: FileText },
-    { key: 'credits', icon: Coins },
+  const items = [
+    {
+      title: m['landing.features.f1_title'](),
+      desc: m['landing.features.f1_desc'](),
+      src: '/imgs/studio/variants.webp',
+    },
+    {
+      title: m['landing.features.f2_title'](),
+      desc: m['landing.features.f2_desc'](),
+      src: '/imgs/studio/show-poster.webp',
+    },
+    {
+      title: m['landing.features.f3_title'](),
+      desc: m['landing.features.f3_desc'](),
+      src: '/imgs/studio/feature-refs.webp',
+    },
   ];
+  const [active, setActive] = useState(0);
 
   return (
-    <section id="features" className="px-4 py-24 sm:py-32">
-      <div className="mx-auto max-w-5xl">
-        <div className="mb-20 text-center">
-          <h2 className="font-serif text-4xl font-normal tracking-tight sm:text-5xl">
+    <section id="features" className="px-4 py-20 sm:py-24">
+      <div className="mx-auto max-w-6xl">
+        <Reveal className="mb-12 max-w-2xl">
+          <h2 className="text-3xl font-bold sm:text-[2.75rem] sm:leading-[1.05]">
             {m['landing.features.title']()}
           </h2>
-          <p className="text-muted-foreground mx-auto mt-5 max-w-lg">
-            {m['landing.features.description']()}
+          <p className="text-muted-foreground mt-4 text-lg">
+            {m['landing.features.subtitle']()}
           </p>
-        </div>
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {features.map(({ key, icon: Icon }) => (
-            <div
-              key={key}
-              className="group border-border bg-card hover:border-foreground/20 relative flex flex-col gap-4 rounded-2xl border p-6 transition-all hover:shadow-sm"
-            >
-              <div className="bg-muted text-foreground/80 group-hover:bg-foreground group-hover:text-background inline-flex size-10 items-center justify-center rounded-xl transition-colors">
-                <Icon className="size-5" strokeWidth={1.75} />
-              </div>
-              <div className="space-y-2">
-                <h3 className="font-medium">
-                  {tDynamic(`landing.features.${key}.title`)}
-                </h3>
-                <p className="text-muted-foreground text-sm leading-relaxed">
-                  {tDynamic(`landing.features.${key}.description`)}
-                </p>
-              </div>
+        </Reveal>
+        <div className="grid gap-8 lg:grid-cols-[0.85fr_1.15fr] lg:gap-14">
+          <div className="flex flex-col gap-2" role="tablist">
+            {items.map((item, i) => (
+              <button
+                key={item.title}
+                type="button"
+                role="tab"
+                aria-selected={active === i}
+                onClick={() => setActive(i)}
+                className={cn(
+                  'rounded-2xl border p-5 text-left transition-colors',
+                  active === i
+                    ? 'panel border-white/15'
+                    : 'border-transparent hover:bg-white/[0.03]'
+                )}
+              >
+                <span
+                  className={cn(
+                    'font-display block text-xl font-bold sm:text-2xl',
+                    active !== i && 'text-foreground/55'
+                  )}
+                >
+                  {item.title}
+                </span>
+                <span
+                  className={cn(
+                    'grid transition-[grid-template-rows] duration-300',
+                    active === i ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
+                  )}
+                >
+                  <span className="text-muted-foreground overflow-hidden pt-0 leading-relaxed">
+                    <span className="block pt-3">{item.desc}</span>
+                  </span>
+                </span>
+              </button>
+            ))}
+          </div>
+          <div className="proof self-start">
+            <div className="relative aspect-[4/3] overflow-hidden rounded-2xl border border-white/10">
+              {items.map((item, i) => (
+                <img
+                  key={item.src}
+                  src={item.src}
+                  alt={item.title}
+                  loading="lazy"
+                  className={cn(
+                    'absolute inset-0 size-full object-cover transition-opacity duration-500',
+                    active === i ? 'opacity-100' : 'opacity-0'
+                  )}
+                />
+              ))}
             </div>
-          ))}
+          </div>
         </div>
       </div>
     </section>

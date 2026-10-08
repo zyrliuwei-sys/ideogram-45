@@ -16,42 +16,42 @@ import {
 const copy = {
   en: {
     preview: (app: string) =>
-      `Your account is ready — make your first ${app} duet video`,
+      `Your account is ready — make your first ${app} image`,
     heading: (app: string) => `Welcome to ${app}`,
     greeting: (name?: string) => (name ? `Hi ${name},` : 'Hi there,'),
     intro:
-      'Your account is ready. Upload two photos and we turn them into the viral two-person duet in the orange recording booth — scene, moves and audio included.',
+      'Your account is ready. Generate posters, labels and product shots with Ideogram 4.5 — then edit the same image again and again without drift.',
     stepsTitle: 'How it works',
     steps: [
-      'Upload one clear portrait for each person.',
-      'Get a free watermarked preview of you both in the booth.',
-      'Happy with it? Animate it — your MP4 with audio is ready in about 3–5 minutes.',
+      'Write a prompt — put any words that must appear in quotes.',
+      'Or upload an image and paint the area you want to change.',
+      'Keep editing: Pixel Lock keeps every unpainted pixel exactly as it was.',
     ],
     credits: (n: number) =>
       `We've added ${n.toLocaleString('en-US')} free credits to your account to get you started.`,
     refund: 'If a generation fails, your credits are refunded automatically.',
-    cta: 'Make your first duet',
-    videos: 'Your finished videos are always saved in My videos.',
+    cta: 'Create your first image',
+    videos: 'Every image you make is saved in My images.',
     footer: (app: string) =>
       `You're receiving this email because you created an account on ${app}.`,
   },
   zh: {
-    preview: (app: string) => `账号已就绪，来做你的第一个 ${app} 对唱视频`,
+    preview: (app: string) => `账号已就绪，来用 ${app} 生成第一张图`,
     heading: (app: string) => `欢迎来到 ${app}`,
     greeting: (name?: string) => (name ? `${name}，你好：` : '你好：'),
     intro:
-      '你的账号已经准备好了。上传两张照片，我们就能为你生成暖橙色录音棚里的双人对唱视频：场景、动作和声音一步到位。',
-    stepsTitle: '三步出片',
+      '你的账号已经准备好了。用 Ideogram 4.5 生成海报、标签和产品图，再对同一张图反复修改，不漂移。',
+    stepsTitle: '三步上手',
     steps: [
-      '为两个人各上传一张清晰的正脸照。',
-      '免费生成一张带水印的预览，看看你们在录音棚里的样子。',
-      '满意就点生成视频，约 3–5 分钟拿到带音频的 MP4。',
+      '写下提示词——需要出现的文字放进引号。',
+      '或上传图片，涂出想修改的区域。',
+      '继续编辑：像素锁定让未涂抹的像素保持原样。',
     ],
     credits: (n: number) =>
       `我们已向你的账号赠送 ${n.toLocaleString('en-US')} 积分，可以直接开始。`,
     refund: '生成失败会自动退还积分。',
-    cta: '做第一个对唱视频',
-    videos: '生成好的视频都会保存在「我的视频」里。',
+    cta: '生成第一张图',
+    videos: '你生成的每张图都会保存在「我的图片」里。',
     footer: (app: string) => `你收到这封邮件，是因为你在 ${app} 注册了账号。`,
   },
 };
@@ -69,7 +69,7 @@ export function WelcomeEmail({
   logoUrl?: string;
   /** Where the main button goes (the create section). */
   url: string;
-  /** "My videos" page; the line is omitted when not given. */
+  /** "My images" page; the line is omitted when not given. */
   videosUrl?: string;
   name?: string;
   /** Signup credits granted, if any — omitted from the copy when 0. */

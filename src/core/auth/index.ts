@@ -181,7 +181,7 @@ async function sendWelcomeEmail(
         appName,
         logoUrl: getEmailLogoUrl(configs, appUrl),
         url: `${appUrl}${zh ? '/zh' : ''}/#create`,
-        videosUrl: `${appUrl}${zh ? '/zh' : ''}/settings/videos`,
+        videosUrl: `${appUrl}${zh ? '/zh' : ''}/settings/images`,
         name: user.name || undefined,
         credits,
         locale: zh ? 'zh' : 'en',

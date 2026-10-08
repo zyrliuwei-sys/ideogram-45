@@ -4,9 +4,11 @@ import { lazy, Suspense, useMemo, useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import {
   CalendarClock,
-  Film,
+  Image as ImageIcon,
   Infinity as InfinityIcon,
-  MonitorPlay,
+  LifeBuoy,
+  Lock,
+  RotateCcw,
   Sparkles,
   XCircle,
 } from 'lucide-react';
@@ -14,11 +16,12 @@ import { toast } from 'sonner';
 
 import { useSession } from '@/core/auth/client';
 import { useRouter } from '@/core/i18n/navigation';
-import { duetCredits } from '@/config/hotel-lobby-pricing';
+import { DEFAULT_TIER_CREDITS, type IdeogramTier } from '@/config/ideogram';
 import { pricingCatalog } from '@/config/pricing';
 import { apiGet, apiPost } from '@/lib/api-client';
 import { currentPathWithQuery } from '@/lib/redirect';
 import { track } from '@/lib/track';
+import { cn } from '@/lib/utils';
 import { m } from '@/paraglide/messages.js';
 import { usePublicConfig } from '@/hooks/use-public-config';
 import type { PaymentProvider } from '@/components/payment-provider-modal';
@@ -57,8 +60,11 @@ export function Pricing({
   variant = 'section',
 }: {
   title?: string;
-  /** `dialog` drops the page-section chrome for use inside a modal. */
-  variant?: 'section' | 'dialog';
+  /**
+   * `dialog` drops the page-section chrome for use inside a modal; `page`
+   * drops the heading (the /pricing route renders its own h1).
+   */
+  variant?: 'section' | 'dialog' | 'page';
 } = {}) {
   const router = useRouter();
   const { data: session } = useSession();
@@ -78,17 +84,14 @@ export function Pricing({
     [configs]
   );
 
-  // Live per-video price so "≈ N videos" matches what generation charges.
+  // Live per-image price so "≈ N images" matches what generation charges.
   const { data: priceData } = useQuery({
-    queryKey: ['hotel-lobby-price'],
-    queryFn: () =>
-      apiGet<{ credits: number; lengths?: Record<string, number> }>(
-        '/api/hotel-lobby/price'
-      ),
+    queryKey: ['image-price'],
+    queryFn: () => apiGet<Record<IdeogramTier, number>>('/api/image/price'),
     staleTime: 10 * 60_000,
   });
-  const perVideo = priceData?.credits ?? duetCredits();
-  const perLongVideo = priceData?.lengths?.['15'] ?? duetCredits(15);
+  const perImage = priceData?.standard ?? DEFAULT_TIER_CREDITS.standard;
+  const perHigh = priceData?.high ?? DEFAULT_TIER_CREDITS.high;
 
   function features(credits: number, extra: PricingFeature[]) {
     return [
@@ -99,19 +102,14 @@ export function Pricing({
         }),
       },
       {
-        icon: Film,
-        label:
-          credits >= perLongVideo
-            ? m['landing.pricing.feature_videos_lengths']({
-                short: Math.floor(credits / perVideo),
-                long: Math.floor(credits / perLongVideo),
-              })
-            : m['landing.pricing.feature_videos_short_only']({
-                short: Math.floor(credits / perVideo),
-                credits: perLongVideo.toLocaleString('en-US'),
-              }),
+        icon: ImageIcon,
+        label: m['landing.pricing.feature_images']({
+          standard: Math.floor(credits / perImage).toLocaleString('en-US'),
+          high: Math.floor(credits / perHigh).toLocaleString('en-US'),
+        }),
       },
-      { icon: MonitorPlay, label: m['landing.pricing.feature_hd']() },
+      { icon: Lock, label: m['landing.pricing.feature_lock']() },
+      { icon: RotateCcw, label: m['landing.pricing.feature_refund']() },
       ...extra,
     ];
   }
@@ -174,17 +172,25 @@ export function Pricing({
     { icon: XCircle, label: m['landing.pricing.feature_cancel']() },
   ];
   const tiers = [
-    ['basic', m['landing.pricing.basic'](), m['landing.pricing.basic_desc']()],
-    ['pro', m['landing.pricing.pro'](), m['landing.pricing.pro_desc']()],
+    [
+      'creator',
+      m['landing.pricing.creator'](),
+      m['landing.pricing.creator_desc'](),
+    ],
     [
       'studio',
       m['landing.pricing.studio'](),
       m['landing.pricing.studio_desc'](),
     ],
+    ['max', m['landing.pricing.max'](), m['landing.pricing.max_desc']()],
+  ] as const;
+  const packs = [
+    ['pack_small', m['landing.pricing.pack_small']()],
+    ['pack_medium', m['landing.pricing.pack_medium']()],
+    ['pack_large', m['landing.pricing.pack_large']()],
   ] as const;
 
   const groups: PricingGroup[] = [
-    // One-time is the tab shown by default (see defaultGroup below).
     {
       key: 'monthly',
       label: m['landing.pricing.monthly'](),
@@ -192,39 +198,35 @@ export function Pricing({
         plan(`${tier}_monthly`, {
           name,
           description,
-          featured: tier === 'pro',
-          badge: tier === 'pro' ? m['landing.pricing.popular']() : undefined,
-          extra: monthlyExtra,
+          featured: tier === 'creator',
+          badge:
+            tier === 'creator' ? m['landing.pricing.popular']() : undefined,
+          extra:
+            tier === 'creator'
+              ? monthlyExtra
+              : [
+                  ...monthlyExtra,
+                  {
+                    icon: LifeBuoy,
+                    label: m['landing.pricing.feature_support'](),
+                  },
+                ],
         })
       ),
     },
     {
       key: 'one-time',
       label: m['landing.pricing.one_time'](),
-      plans: [
-        plan('pack_single', {
-          name: m['landing.pricing.pack_single'](),
-          description: m['landing.pricing.pack_single_desc'](),
-          extra: packExtra,
-        }),
-        plan('pack_starter', {
-          name: m['landing.pricing.pack_starter'](),
+      plans: packs.map(([id, name]) =>
+        plan(id, {
+          name,
           description: m['landing.pricing.pack_desc'](),
-          featured: true,
-          badge: m['landing.pricing.popular'](),
+          featured: id === 'pack_medium',
+          badge:
+            id === 'pack_medium' ? m['landing.pricing.popular']() : undefined,
           extra: packExtra,
-        }),
-        plan('pack_standard', {
-          name: m['landing.pricing.pack_standard'](),
-          description: m['landing.pricing.pack_desc'](),
-          extra: packExtra,
-        }),
-        plan('pack_pro', {
-          name: m['landing.pricing.pack_pro'](),
-          description: m['landing.pricing.pack_desc'](),
-          extra: packExtra,
-        }),
-      ],
+        })
+      ),
     },
   ];
 
@@ -312,33 +314,42 @@ export function Pricing({
     <Wrapper
       id={dialog ? undefined : 'pricing'}
       className={
-        dialog ? undefined : 'border-border border-t px-4 py-24 sm:py-32'
+        dialog
+          ? undefined
+          : variant === 'page'
+            ? 'px-4 pb-20'
+            : 'scroll-mt-20 px-4 py-24 sm:py-28'
       }
     >
-      <div className="mx-auto max-w-5xl">
-        <div className={dialog ? 'mb-8 pr-8 text-center' : 'mb-20 text-center'}>
+      <div className="mx-auto max-w-6xl">
+        <div
+          className={cn(
+            dialog ? 'mb-8 pr-8 text-center' : 'mb-14 text-center',
+            variant === 'page' && 'hidden'
+          )}
+        >
           <h2
             className={
               dialog
-                ? 'font-serif text-2xl font-normal tracking-tight sm:text-3xl'
-                : 'font-serif text-4xl font-normal tracking-tight sm:text-5xl'
+                ? 'text-2xl font-bold tracking-tight sm:text-3xl'
+                : 'text-3xl font-bold tracking-tight sm:text-[2.75rem] sm:leading-[1.05]'
             }
           >
             {title ?? m['landing.pricing.title']()}
           </h2>
-          <p className="text-muted-foreground mt-5">
+          <p className="text-muted-foreground mx-auto mt-5 max-w-2xl text-lg">
             {m['landing.pricing.description']()}
           </p>
-          <p className="text-muted-foreground mt-2 text-sm">
-            {m['landing.pricing.per_video_lengths']({
-              short: perVideo.toLocaleString('en-US'),
-              long: perLongVideo.toLocaleString('en-US'),
+          <p className="readout text-primary mt-3 text-xs">
+            {m['landing.pricing.per_image']({
+              standard: perImage,
+              high: perHigh,
             })}
           </p>
         </div>
         <PricingTable
           groups={groups}
-          defaultGroup="one-time"
+          defaultGroup="monthly"
           onCheckout={handleCheckout}
         />
       </div>

@@ -24,7 +24,7 @@ export function BlogCard({
   return (
     <Link
       href={href}
-      className="group border-border bg-card hover:border-foreground/20 relative flex flex-col overflow-hidden rounded-2xl border transition-all hover:shadow-sm"
+      className="group panel relative flex flex-col overflow-hidden rounded-2xl transition-colors hover:border-white/20"
     >
       {image && (
         <img
@@ -37,7 +37,7 @@ export function BlogCard({
         />
       )}
       <div className="flex flex-1 flex-col gap-3 p-6">
-        <h3 className="leading-snug font-medium group-hover:underline group-hover:underline-offset-4">
+        <h3 className="text-lg leading-snug font-semibold group-hover:underline group-hover:underline-offset-4">
           {title}
         </h3>
         {description && (

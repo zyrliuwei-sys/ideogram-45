@@ -10,7 +10,6 @@ import { cn } from '@/lib/utils';
 import { m } from '@/paraglide/messages.js';
 import { LocaleSelector } from '@/components/locale-selector';
 import { SiteUserMenu } from '@/components/site-user-menu';
-import { ThemeToggle } from '@/components/theme-toggle';
 import { buttonVariants } from '@/components/ui/button';
 
 export interface NavLink {
@@ -35,52 +34,53 @@ export function SiteHeader({
   const user = session?.user;
 
   return (
-    <header className="bg-background/95 border-border sticky top-0 z-50 w-full border-b backdrop-blur-sm">
-      <div className="mx-auto flex h-18 max-w-7xl items-center justify-between px-4 sm:px-6">
-        {/* Brand */}
-        <Link href="/" className="flex items-center gap-2.5">
-          <img
-            src={envConfigs.app_logo}
-            alt={logoAlt}
-            width={512}
-            height={512}
-            className="size-8 rounded-full"
-          />
-          <span className="text-base font-bold tracking-tight">
-            {envConfigs.app_name}
-          </span>
-        </Link>
+    <header className="bg-background/80 border-border sticky top-0 z-50 w-full border-b backdrop-blur-md">
+      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
+        <div className="flex items-center gap-10">
+          {/* Brand */}
+          <Link href="/" className="flex items-center gap-2.5">
+            <img
+              src={envConfigs.app_logo}
+              alt={logoAlt}
+              width={512}
+              height={512}
+              className="size-8 rounded-lg"
+            />
+            <span className="font-display text-[17px] font-bold tracking-tight">
+              {envConfigs.app_name}
+            </span>
+          </Link>
 
-        {/* Desktop nav */}
-        <nav className="hidden items-center gap-6 md:flex">
-          {navLinks?.map((link) =>
-            isExternalHref(link.href) ? (
-              <a
-                key={link.href}
-                href={link.href}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-muted-foreground hover:text-foreground text-sm transition-colors"
-              >
-                {link.label}
-              </a>
-            ) : (
-              <Link
-                key={link.href}
-                href={link.href}
-                target={link.external ? '_blank' : undefined}
-                className="text-muted-foreground hover:text-foreground text-sm transition-colors"
-              >
-                {link.label}
-              </Link>
-            )
-          )}
-        </nav>
+          {/* Desktop nav */}
+          <nav className="hidden items-center gap-7 md:flex">
+            {navLinks?.map((link) =>
+              isExternalHref(link.href) ? (
+                <a
+                  key={link.href}
+                  href={link.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-muted-foreground hover:text-foreground text-sm transition-colors"
+                >
+                  {link.label}
+                </a>
+              ) : (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  target={link.external ? '_blank' : undefined}
+                  className="text-muted-foreground hover:text-foreground text-sm transition-colors"
+                >
+                  {link.label}
+                </Link>
+              )
+            )}
+          </nav>
+        </div>
 
         {/* Desktop actions */}
         <div className="hidden items-center gap-3 md:flex">
           <LocaleSelector />
-          <ThemeToggle />
           {user ? (
             <SiteUserMenu
               name={user.name || 'User'}
@@ -137,7 +137,6 @@ export function SiteHeader({
           </nav>
           <div className="border-border mt-3 flex items-center gap-2 border-t pt-3">
             <LocaleSelector />
-            <ThemeToggle />
             <div className="flex-1" />
             {user ? (
               <SiteUserMenu

@@ -94,16 +94,18 @@ function StaticPage() {
 
   return (
     <article>
-      <header className="border-border mb-6 border-b pb-5">
-        <h1 className="text-foreground text-3xl font-semibold tracking-tight md:text-4xl">
-          {meta.title}
+      <header className="mb-10 border-b border-white/10 pb-8">
+        <h1 className="text-foreground text-[2.25rem] leading-[1.05] font-bold sm:text-[3rem]">
+          {meta.title.split(' | ')[0]}
         </h1>
-        <p className="text-muted-foreground mt-2 text-sm">{meta.description}</p>
-        <p className="text-muted-foreground mt-2 text-xs">
+        <p className="text-muted-foreground mt-4 text-lg leading-relaxed">
+          {meta.description}
+        </p>
+        <p className="readout text-muted-foreground mt-4 text-xs">
           {m['common.pages.last_updated']()}: {meta.updated_at}
         </p>
       </header>
-      <div className="text-foreground/90 text-[15px] leading-7">
+      <div className="text-foreground/85 text-[16px] leading-[1.75]">
         <Suspense fallback={null}>
           <Content />
         </Suspense>

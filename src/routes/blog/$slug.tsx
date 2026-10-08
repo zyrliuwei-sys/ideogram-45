@@ -64,7 +64,7 @@ function BlogPostPage() {
           </Link>
 
           <header className="border-border mt-8 mb-6 border-b pb-6">
-            <h1 className="text-foreground text-3xl font-semibold tracking-tight md:text-4xl">
+            <h1 className="text-foreground text-[2.25rem] leading-[1.05] font-bold md:text-[3rem]">
               {post.title}
             </h1>
             {post.description && (
@@ -101,7 +101,7 @@ function BlogPostPage() {
           )}
 
           {LocalContent ? (
-            <div className="text-foreground/90 text-[15px] leading-7">
+            <div className="text-foreground/85 text-[16px] leading-[1.75]">
               <MDXProvider components={mdxComponents}>
                 <LocalContent />
               </MDXProvider>

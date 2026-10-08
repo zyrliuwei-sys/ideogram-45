@@ -1,28 +1,53 @@
 import { createFileRoute } from '@tanstack/react-router';
 
 import { envConfigs } from '@/config';
-import {
-  HERO_DESKTOP_SIZES,
-  HERO_DESKTOP_WIDTHS,
-  HERO_MOBILE_MEDIA,
-  HERO_MOBILE_WIDTHS,
-  optSrcSet,
-} from '@/config/hotel-lobby-images';
 import { m } from '@/paraglide/messages.js';
 import { getLocale, locales, localizeUrl } from '@/paraglide/runtime.js';
-import { HotelLobbyPage } from '@/blocks/hotel-lobby';
+import { CTA } from '@/blocks/cta';
+import { DriftDemo } from '@/blocks/drift-demo';
+import { FAQ, faqItems } from '@/blocks/faq';
+import { Features } from '@/blocks/features';
+import { Footer } from '@/blocks/footer';
+import { Guide } from '@/blocks/guide';
+import { Header } from '@/blocks/header';
+import { Hero, HERO_IMAGE } from '@/blocks/hero';
+import { HowItWorks } from '@/blocks/how-it-works';
+import { Pricing } from '@/blocks/pricing';
+import { Showcase } from '@/blocks/showcase';
+import { StudioSection } from '@/blocks/studio-section';
+import { Why } from '@/blocks/why';
+
+function HomePage() {
+  return (
+    <div className="bg-background text-foreground flex min-h-screen flex-col">
+      <Header />
+      <main className="flex-1">
+        <Hero />
+        <StudioSection />
+        <Showcase />
+        <DriftDemo />
+        <Features />
+        <Why />
+        <HowItWorks />
+        <Guide />
+        <Pricing />
+        <FAQ />
+        <CTA />
+      </main>
+      <Footer />
+    </div>
+  );
+}
 
 export const Route = createFileRoute('/')({
   loader: () => ({ locale: getLocale() }),
   head: ({ loaderData }) => {
-    const locale = loaderData?.locale ?? 'en';
-    const title = m['common.metadata.title']({}, { locale: locale as any });
-    const description = m['common.metadata.description'](
-      {},
-      { locale: locale as any }
-    );
+    const locale = (loaderData?.locale ?? 'en') as any;
+    const title = m['common.metadata.title']({}, { locale });
+    const description = m['common.metadata.description']({}, { locale });
     const urlFor = (loc: string) =>
       localizeUrl(`${envConfigs.app_url}/`, { locale: loc as any }).href;
+    const image = `${envConfigs.app_url}${HERO_IMAGE}`;
     return {
       meta: [
         { title },
@@ -30,38 +55,15 @@ export const Route = createFileRoute('/')({
         { property: 'og:title', content: title },
         { property: 'og:description', content: description },
         { property: 'og:type', content: 'website' },
-        {
-          property: 'og:image',
-          content: `${envConfigs.app_url}/imgs/generated/hotel-lobby-duet.png`,
-        },
+        { property: 'og:image', content: image },
         { name: 'twitter:card', content: 'summary_large_image' },
       ],
       links: [
-        // LCP: the hero <picture> sits behind <source>s, which the browser
-        // only discovers after layout — preload the matching rendition.
         {
           rel: 'preload',
           as: 'image',
-          type: 'image/avif',
-          media: HERO_MOBILE_MEDIA,
-          imageSrcSet: optSrcSet('hero-mobile', HERO_MOBILE_WIDTHS, 'avif'),
-          imageSizes: '100vw',
+          href: HERO_IMAGE,
           fetchPriority: 'high',
-        },
-        {
-          rel: 'preload',
-          as: 'image',
-          type: 'image/avif',
-          media: '(min-width: 601px)',
-          imageSrcSet: optSrcSet('hero-desktop', HERO_DESKTOP_WIDTHS, 'avif'),
-          imageSizes: HERO_DESKTOP_SIZES,
-          fetchPriority: 'high',
-        },
-        {
-          rel: 'preload',
-          as: 'image',
-          type: 'image/webp',
-          href: '/imgs/generated/opt/studio-backdrop-960.webp',
         },
         { rel: 'canonical', href: urlFor(locale) },
         ...locales.map((loc) => ({
@@ -76,16 +78,30 @@ export const Route = createFileRoute('/')({
           type: 'application/ld+json',
           children: JSON.stringify({
             '@context': 'https://schema.org',
-            '@type': 'WebPage',
-            name: title,
-            description,
-            url: urlFor(locale),
-            inLanguage: locale,
-            primaryImageOfPage: `${envConfigs.app_url}/imgs/generated/hotel-lobby-duet.png`,
+            '@graph': [
+              {
+                '@type': 'WebApplication',
+                name: envConfigs.app_name,
+                url: urlFor(locale),
+                description,
+                applicationCategory: 'DesignApplication',
+                operatingSystem: 'Web',
+                inLanguage: locale,
+                image,
+              },
+              {
+                '@type': 'FAQPage',
+                mainEntity: faqItems().map(([q, a]) => ({
+                  '@type': 'Question',
+                  name: q,
+                  acceptedAnswer: { '@type': 'Answer', text: a },
+                })),
+              },
+            ],
           }),
         },
       ],
     };
   },
-  component: HotelLobbyPage,
+  component: HomePage,
 });

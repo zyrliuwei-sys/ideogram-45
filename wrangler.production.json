@@ -1,24 +1,24 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "hotel-lobby-ai",
+  "name": "ideogram-45",
   "compatibility_flags": ["nodejs_compat"],
   "observability": { "enabled": true },
   "vars": {
     "DATABASE_PROVIDER": "d1",
-    "VITE_APP_URL": "https://hotel-lobby.org",
-    "VITE_APP_NAME": "Hotel Lobby AI",
-    "VITE_APP_DESCRIPTION": "Plan a two-person Hotel Lobby AI filter video and copy a prompt for an image-to-video studio.",
+    "VITE_APP_URL": "https://ideogram-45.com",
+    "VITE_APP_NAME": "Ideogram 4.5",
+    "VITE_APP_DESCRIPTION": "Ideogram 4.5 AI image generator and drift-free editor: edit the same image again and again while untouched pixels stay put.",
     "VITE_APP_LOGO": "/logo.svg",
     "VITE_DEFAULT_LOCALE": "en"
   },
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "hotel-lobby-db",
-      "database_id": "9c9d279e-2929-4b38-9d0f-0259fb6a96dd",
+      "database_name": "ideogram-45",
+      "database_id": "0896efe2-ff45-4ffe-9315-55f3ab4f2202",
       "migrations_dir": "drizzle"
     }
   ],
   "triggers": { "crons": ["* * * * *"] },
-  "routes": [{ "pattern": "hotel-lobby.org", "custom_domain": true }]
+  "routes": [{ "pattern": "ideogram-45.com", "custom_domain": true }]
 }

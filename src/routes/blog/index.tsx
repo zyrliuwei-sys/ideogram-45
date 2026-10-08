@@ -56,11 +56,11 @@ function BlogPage() {
       <Header />
       <main className="flex-1 px-4 py-16 sm:py-24">
         <div className="mx-auto max-w-5xl">
-          <div className="mb-16 text-center">
-            <h1 className="font-serif text-4xl font-normal tracking-tight sm:text-5xl">
+          <div className="mb-14 max-w-2xl">
+            <h1 className="text-[2.25rem] leading-[1.05] font-bold sm:text-[3rem]">
               {m['blog.title']()}
             </h1>
-            <p className="text-muted-foreground mx-auto mt-5 max-w-lg">
+            <p className="text-muted-foreground mt-5 text-lg">
               {m['blog.description']()}
             </p>
           </div>

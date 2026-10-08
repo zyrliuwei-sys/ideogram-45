@@ -7,7 +7,7 @@ export const mdxComponents: MDXComponents = {
   h1: ({ className, ...props }: HTMLAttributes<HTMLHeadingElement>) => (
     <h1
       className={cn(
-        'text-foreground mt-6 mb-2 text-xl font-semibold tracking-tight md:text-2xl',
+        'text-foreground mt-10 mb-3 text-2xl font-bold md:text-[1.75rem]',
         className
       )}
       {...props}
@@ -16,7 +16,7 @@ export const mdxComponents: MDXComponents = {
   h2: ({ className, ...props }: HTMLAttributes<HTMLHeadingElement>) => (
     <h2
       className={cn(
-        'text-foreground mt-6 mb-2 text-lg font-semibold tracking-tight md:text-xl',
+        'text-foreground mt-10 mb-3 text-xl font-bold md:text-[1.4rem]',
         className
       )}
       {...props}
@@ -25,7 +25,7 @@ export const mdxComponents: MDXComponents = {
   h3: ({ className, ...props }: HTMLAttributes<HTMLHeadingElement>) => (
     <h3
       className={cn(
-        'text-foreground mt-4 mb-1.5 text-base font-semibold tracking-tight',
+        'text-foreground mt-7 mb-2 text-lg font-semibold',
         className
       )}
       {...props}
@@ -33,7 +33,7 @@ export const mdxComponents: MDXComponents = {
   ),
   p: ({ className, ...props }: HTMLAttributes<HTMLParagraphElement>) => (
     <p
-      className={cn('text-foreground/90 mt-2 leading-7', className)}
+      className={cn('text-foreground/85 mt-3 leading-[1.75]', className)}
       {...props}
     />
   ),
@@ -49,7 +49,7 @@ export const mdxComponents: MDXComponents = {
   ul: ({ className, ...props }: HTMLAttributes<HTMLUListElement>) => (
     <ul
       className={cn(
-        'marker:text-muted-foreground mt-2 ml-6 list-disc space-y-1',
+        'marker:text-primary/70 mt-3 ml-5 list-disc space-y-2',
         className
       )}
       {...props}
@@ -58,14 +58,17 @@ export const mdxComponents: MDXComponents = {
   ol: ({ className, ...props }: HTMLAttributes<HTMLOListElement>) => (
     <ol
       className={cn(
-        'marker:text-muted-foreground mt-2 ml-6 list-decimal space-y-1',
+        'marker:text-primary/70 mt-3 ml-5 list-decimal space-y-2',
         className
       )}
       {...props}
     />
   ),
   li: ({ className, ...props }: HTMLAttributes<HTMLLIElement>) => (
-    <li className={cn('text-foreground/90 leading-7', className)} {...props} />
+    <li
+      className={cn('text-foreground/85 pl-1 leading-[1.75]', className)}
+      {...props}
+    />
   ),
   strong: ({ className, ...props }: HTMLAttributes<HTMLElement>) => (
     <strong
@@ -76,7 +79,7 @@ export const mdxComponents: MDXComponents = {
   blockquote: ({ className, ...props }: HTMLAttributes<HTMLQuoteElement>) => (
     <blockquote
       className={cn(
-        'border-border text-muted-foreground my-4 border-l-2 pl-4 italic',
+        'border-primary/60 text-foreground/80 my-6 border-l-2 pl-5',
         className
       )}
       {...props}

@@ -30,86 +30,56 @@ export type PricingProduct = {
 };
 
 /**
- * Hotel Lobby AI catalog. A duet video costs a fixed number of credits
- * (see ./hotel-lobby-pricing.ts — 440 at the default 8s reference video), and
- * every pack holds a whole number of videos.
+ * Ideogram 4.5 catalog. An image costs 2 credits (Ideogram 4.5) or 6 credits
+ * (Ideogram 4.5 High) — see ./ideogram.ts.
  *
- * Pricing floor: no product may sell credits below $0.01 each, so every
- * video is sold at ≥ 7× its fal cost. That is why there are no discounted
- * yearly plans — check priceInCents / credits ≥ 0.01 before adding a product.
+ * Pricing floor: credits never sell below ~$0.22 each, so the priciest image
+ * (High, ≤ $0.22 at fal) still clears 6× its cost. Check
+ * priceInCents / credits before adding a product.
  * Keys MUST match what the pricing UI sends as product_id.
  */
 export const pricingCatalog: Record<string, PricingProduct> = {
-  pack_single: {
-    productId: 'pack_single',
-    productName: 'Single Video',
-    planName: 'Single Video',
-    description: 'Single Video',
+  pack_small: {
+    productId: 'pack_small',
+    productName: 'Small Pack',
+    planName: 'Small Pack',
+    description: 'Small Pack',
     type: PaymentType.ONE_TIME,
-    // $4.90 for one 8 s video (440 credits = duetCredits(8)). Added
-    // 2026-10-04 after no paid orders the day the floor moved to $9.90.
-    priceInCents: 490,
-    currency: 'usd',
-    credits: 440,
-  },
-  pack_starter: {
-    productId: 'pack_starter',
-    productName: 'Starter Pack',
-    planName: 'Starter Pack',
-    description: 'Starter Pack',
-    type: PaymentType.ONE_TIME,
-    // $9.90 for two 8 s videos (≈ 7× fal cost after PayPal fees); was
-    // $5 / 440 until 2026-10-03 — compare paid starter orders per day.
     priceInCents: 990,
     currency: 'usd',
-    credits: 880,
+    credits: 40,
   },
-  pack_standard: {
-    productId: 'pack_standard',
-    productName: 'Standard Pack',
-    planName: 'Standard Pack',
-    description: 'Standard Pack',
+  pack_medium: {
+    productId: 'pack_medium',
+    productName: 'Medium Pack',
+    planName: 'Medium Pack',
+    description: 'Medium Pack',
     type: PaymentType.ONE_TIME,
-    priceInCents: 2300,
+    priceInCents: 2490,
     currency: 'usd',
-    credits: 2200,
+    credits: 100,
   },
-  pack_pro: {
-    productId: 'pack_pro',
-    productName: 'Pro Pack',
-    planName: 'Pro Pack',
-    description: 'Pro Pack',
+  pack_large: {
+    productId: 'pack_large',
+    productName: 'Large Pack',
+    planName: 'Large Pack',
+    description: 'Large Pack',
     type: PaymentType.ONE_TIME,
-    priceInCents: 4400,
+    priceInCents: 5900,
     currency: 'usd',
-    credits: 4400,
+    credits: 250,
   },
-  basic_monthly: {
-    productId: 'basic_monthly',
-    productName: 'Basic',
-    planName: 'Basic Monthly',
-    description: 'Basic Monthly',
+  creator_monthly: {
+    productId: 'creator_monthly',
+    productName: 'Creator',
+    planName: 'Creator Monthly',
+    description: 'Creator Monthly',
     type: PaymentType.SUBSCRIPTION,
-    priceInCents: 2300,
+    priceInCents: 2900,
     currency: 'usd',
-    credits: 2200,
+    credits: 120,
     plan: {
-      name: 'Basic',
-      interval: PaymentInterval.MONTH,
-      intervalCount: 1,
-    },
-  },
-  pro_monthly: {
-    productId: 'pro_monthly',
-    productName: 'Pro',
-    planName: 'Pro Monthly',
-    description: 'Pro Monthly',
-    type: PaymentType.SUBSCRIPTION,
-    priceInCents: 4400,
-    currency: 'usd',
-    credits: 4400,
-    plan: {
-      name: 'Pro',
+      name: 'Creator',
       interval: PaymentInterval.MONTH,
       intervalCount: 1,
     },
@@ -120,11 +90,26 @@ export const pricingCatalog: Record<string, PricingProduct> = {
     planName: 'Studio Monthly',
     description: 'Studio Monthly',
     type: PaymentType.SUBSCRIPTION,
-    priceInCents: 8800,
+    priceInCents: 7900,
     currency: 'usd',
-    credits: 8800,
+    credits: 330,
     plan: {
       name: 'Studio',
+      interval: PaymentInterval.MONTH,
+      intervalCount: 1,
+    },
+  },
+  max_monthly: {
+    productId: 'max_monthly',
+    productName: 'Max',
+    planName: 'Max Monthly',
+    description: 'Max Monthly',
+    type: PaymentType.SUBSCRIPTION,
+    priceInCents: 15800,
+    currency: 'usd',
+    credits: 660,
+    plan: {
+      name: 'Max',
       interval: PaymentInterval.MONTH,
       intervalCount: 1,
     },
