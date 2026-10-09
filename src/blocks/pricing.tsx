@@ -16,7 +16,11 @@ import { toast } from 'sonner';
 
 import { useSession } from '@/core/auth/client';
 import { useRouter } from '@/core/i18n/navigation';
-import { DEFAULT_TIER_CREDITS, type IdeogramTier } from '@/config/ideogram';
+import {
+  CENTS_PER_CREDIT,
+  DEFAULT_TIER_CREDITS,
+  type IdeogramTier,
+} from '@/config/ideogram';
 import { pricingCatalog } from '@/config/pricing';
 import { apiGet, apiPost } from '@/lib/api-client';
 import { currentPathWithQuery } from '@/lib/redirect';
@@ -130,6 +134,10 @@ export function Pricing({
   ): PricingPlan {
     const product = pricingCatalog[productId];
     const interval = product.plan?.interval;
+    // Credits beyond the base rate (1 credit per CENTS_PER_CREDIT paid).
+    const bonus = Math.round(
+      (product.credits * CENTS_PER_CREDIT * 100) / product.priceInCents - 100
+    );
     // Yearly plans are shown as their monthly equivalent, billed yearly.
     const yearly = interval === 'year';
     const card: PricingPlan = {
@@ -145,8 +153,12 @@ export function Pricing({
       interval: interval ? m['landing.pricing.per_month']() : undefined,
       featured: opts.featured,
       badge: opts.badge,
-      plainFrame: opts.plainFrame,
-      highlight: opts.highlight,
+      plainFrame: opts.plainFrame ?? true,
+      highlight:
+        opts.highlight ??
+        (bonus > 0
+          ? m['landing.pricing.bonus']({ percent: bonus })
+          : undefined),
       features: features(product.credits, opts.extra ?? []),
       productId,
       priceInCents: product.priceInCents,
@@ -340,13 +352,23 @@ export function Pricing({
           <p className="text-muted-foreground mx-auto mt-5 max-w-2xl text-lg">
             {m['landing.pricing.description']()}
           </p>
-          <p className="readout text-primary mt-3 text-xs">
-            {m['landing.pricing.per_image']({
-              standard: perImage,
-              high: perHigh,
-            })}
-          </p>
         </div>
+        {/* Stays visible on /pricing, where the heading above is hidden. */}
+        <p
+          className={cn(
+            'readout text-primary text-center text-xs',
+            dialog
+              ? '-mt-5 mb-8'
+              : variant === 'page'
+                ? 'mb-10'
+                : '-mt-11 mb-14'
+          )}
+        >
+          {m['landing.pricing.per_image']({
+            standard: perImage,
+            high: perHigh,
+          })}
+        </p>
         <PricingTable
           groups={groups}
           defaultGroup="monthly"

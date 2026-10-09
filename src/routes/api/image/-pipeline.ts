@@ -55,7 +55,10 @@ export function endpointFor(
   return configs.ideogram_edit_model || DEFAULT_ENDPOINTS.edit;
 }
 
-/** fal input for one request. Ideogram and GPT Image take different fields. */
+/**
+ * fal input for one request. Ideogram 4.5, Ideogram V3 and GPT Image take
+ * different fields.
+ */
 export function buildInput(params: {
   endpoint: string;
   mode: StudioMode;
@@ -67,13 +70,18 @@ export function buildInput(params: {
 }): Record<string, unknown> {
   const { endpoint, mode, tier, aspect, expand, image, mask } = params;
   const isIdeogram = endpoint.includes('ideogram');
+  const isIdeogramV3 = /ideogram\/v3/.test(endpoint);
   const options: Record<string, unknown> = { num_images: 1 };
 
-  if (isIdeogram) {
+  if (isIdeogramV3) {
     options.rendering_speed = tier === 'high' ? 'QUALITY' : 'BALANCED';
     options.expand_prompt = expand;
   } else {
     options.quality = tier === 'high' ? 'high' : 'medium';
+    // 4.5 edit has no prompt expansion; only its generate endpoint does.
+    if (isIdeogram && mode === 'generate') {
+      options.enable_prompt_expansion = expand;
+    }
   }
 
   if (mode === 'generate') {

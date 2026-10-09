@@ -34,6 +34,7 @@ import {
   MAX_PROMPT_CHARS,
   type AspectRatio,
   type IdeogramTier,
+  type MaskEditColor,
 } from '@/config/ideogram';
 import { EXAMPLE_PROMPTS, RANDOM_PROMPTS } from '@/config/studio-prompts';
 import { apiGet, apiPost } from '@/lib/api-client';
@@ -109,25 +110,30 @@ async function toSource(src: string): Promise<Source> {
   };
 }
 
-/** fal reads white as "edit here", black as "keep". */
-function exportMask(maskCanvas: HTMLCanvasElement) {
+/**
+ * The painted area becomes `editColor` (the color the endpoint changes),
+ * everything else the opposite color (kept).
+ */
+function exportMask(maskCanvas: HTMLCanvasElement, editColor: MaskEditColor) {
+  const [paint, keep] =
+    editColor === 'black' ? ['#000', '#fff'] : ['#fff', '#000'];
   const { width, height } = maskCanvas;
-  const white = document.createElement('canvas');
-  white.width = width;
-  white.height = height;
-  const wctx = white.getContext('2d')!;
-  wctx.drawImage(maskCanvas, 0, 0);
-  wctx.globalCompositeOperation = 'source-in';
-  wctx.fillStyle = '#fff';
-  wctx.fillRect(0, 0, width, height);
+  const painted = document.createElement('canvas');
+  painted.width = width;
+  painted.height = height;
+  const pctx = painted.getContext('2d')!;
+  pctx.drawImage(maskCanvas, 0, 0);
+  pctx.globalCompositeOperation = 'source-in';
+  pctx.fillStyle = paint;
+  pctx.fillRect(0, 0, width, height);
 
   const out = document.createElement('canvas');
   out.width = width;
   out.height = height;
   const ctx = out.getContext('2d')!;
-  ctx.fillStyle = '#000';
+  ctx.fillStyle = keep;
   ctx.fillRect(0, 0, width, height);
-  ctx.drawImage(white, 0, 0);
+  ctx.drawImage(painted, 0, 0);
   return out.toDataURL('image/png');
 }
 
@@ -270,7 +276,10 @@ export function ImageStudio() {
 
   const priceQuery = useQuery({
     queryKey: ['image-price'],
-    queryFn: () => apiGet<Record<IdeogramTier, number>>('/api/image/price'),
+    queryFn: () =>
+      apiGet<Record<IdeogramTier, number> & { maskEditColor?: MaskEditColor }>(
+        '/api/image/price'
+      ),
     staleTime: 10 * 60_000,
   });
   const price = priceQuery.data?.[tier] ?? DEFAULT_TIER_CREDITS[tier];
@@ -416,7 +425,10 @@ export function ImageStudio() {
     let mask: string | undefined;
     let maskSnapshot: HTMLCanvasElement | null = null;
     if (mode === 'edit' && maskRef.current && painted > 0) {
-      mask = exportMask(maskRef.current);
+      mask = exportMask(
+        maskRef.current,
+        priceQuery.data?.maskEditColor ?? 'black'
+      );
       // Snapshot so further painting doesn't change the lock of this run.
       maskSnapshot = document.createElement('canvas');
       maskSnapshot.width = maskRef.current.width;

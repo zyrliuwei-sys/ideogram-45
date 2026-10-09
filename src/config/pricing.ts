@@ -30,13 +30,14 @@ export type PricingProduct = {
 };
 
 /**
- * Ideogram 4.5 catalog. An image costs 2 credits (Ideogram 4.5) or 6 credits
- * (Ideogram 4.5 High) — see ./ideogram.ts.
+ * Ideogram 4.5 catalog. 1 credit = $0.01 (fal's unit); an image costs 42
+ * credits (Ideogram 4.5) or 154 credits (High) — 7× its fal cost, see
+ * ./ideogram.ts.
  *
- * Pricing floor: credits never sell below ~$0.22 each, so the priciest image
- * (High, ≤ $0.22 at fal) still clears 6× its cost. Check
- * priceInCents / credits before adding a product.
- * Keys MUST match what the pricing UI sends as product_id.
+ * The smallest pack sells credits at exactly $0.01 (the full 7×); bigger
+ * packs and monthly plans add bonus credits, but none sells below ~$0.009
+ * per credit (≥ 6.3× fal cost). Check priceInCents / credits before adding
+ * a product. Keys MUST match what the pricing UI sends as product_id.
  */
 export const pricingCatalog: Record<string, PricingProduct> = {
   pack_small: {
@@ -47,7 +48,7 @@ export const pricingCatalog: Record<string, PricingProduct> = {
     type: PaymentType.ONE_TIME,
     priceInCents: 990,
     currency: 'usd',
-    credits: 40,
+    credits: 990,
   },
   pack_medium: {
     productId: 'pack_medium',
@@ -57,7 +58,7 @@ export const pricingCatalog: Record<string, PricingProduct> = {
     type: PaymentType.ONE_TIME,
     priceInCents: 2490,
     currency: 'usd',
-    credits: 100,
+    credits: 2600,
   },
   pack_large: {
     productId: 'pack_large',
@@ -67,7 +68,7 @@ export const pricingCatalog: Record<string, PricingProduct> = {
     type: PaymentType.ONE_TIME,
     priceInCents: 5900,
     currency: 'usd',
-    credits: 250,
+    credits: 6300,
   },
   creator_monthly: {
     productId: 'creator_monthly',
@@ -75,9 +76,9 @@ export const pricingCatalog: Record<string, PricingProduct> = {
     planName: 'Creator Monthly',
     description: 'Creator Monthly',
     type: PaymentType.SUBSCRIPTION,
-    priceInCents: 2900,
+    priceInCents: 1900,
     currency: 'usd',
-    credits: 120,
+    credits: 2000,
     plan: {
       name: 'Creator',
       interval: PaymentInterval.MONTH,
@@ -90,9 +91,9 @@ export const pricingCatalog: Record<string, PricingProduct> = {
     planName: 'Studio Monthly',
     description: 'Studio Monthly',
     type: PaymentType.SUBSCRIPTION,
-    priceInCents: 7900,
+    priceInCents: 4900,
     currency: 'usd',
-    credits: 330,
+    credits: 5300,
     plan: {
       name: 'Studio',
       interval: PaymentInterval.MONTH,
@@ -105,9 +106,9 @@ export const pricingCatalog: Record<string, PricingProduct> = {
     planName: 'Max Monthly',
     description: 'Max Monthly',
     type: PaymentType.SUBSCRIPTION,
-    priceInCents: 15800,
+    priceInCents: 9900,
     currency: 'usd',
-    credits: 660,
+    credits: 11000,
     plan: {
       name: 'Max',
       interval: PaymentInterval.MONTH,
