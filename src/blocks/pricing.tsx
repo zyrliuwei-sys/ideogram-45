@@ -1,5 +1,3 @@
-'use client';
-
 import { lazy, Suspense, useMemo, useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import {
@@ -24,6 +22,7 @@ import {
 import { pricingCatalog } from '@/config/pricing';
 import { apiGet, apiPost } from '@/lib/api-client';
 import { currentPathWithQuery } from '@/lib/redirect';
+import { flushStudioDraft } from '@/lib/studio-draft';
 import { track } from '@/lib/track';
 import { cn } from '@/lib/utils';
 import { m } from '@/paraglide/messages.js';
@@ -265,9 +264,16 @@ export function Pricing({
         // Come back to the page the user paid from.
         redirect: currentPathWithQuery('/settings/billing'),
       }),
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       if (!data?.checkout_url) {
         toast.error('Checkout failed');
+        setLoadingProvider(null);
+        return;
+      }
+      try {
+        await flushStudioDraft();
+      } catch (error) {
+        toast.error((error as Error).message);
         setLoadingProvider(null);
         return;
       }
@@ -290,6 +296,11 @@ export function Pricing({
 
   async function handleCheckout(plan: PricingPlan) {
     if (!session?.user) {
+      try {
+        await flushStudioDraft();
+      } catch (error) {
+        return toast.error((error as Error).message);
+      }
       const callbackUrl = encodeURIComponent(currentPathWithQuery('/pricing'));
       router.push(`/sign-in?callbackUrl=${callbackUrl}`);
       return;
@@ -371,7 +382,7 @@ export function Pricing({
         </p>
         <PricingTable
           groups={groups}
-          defaultGroup="monthly"
+          defaultGroup={variant === 'dialog' ? 'one-time' : 'monthly'}
           onCheckout={handleCheckout}
         />
       </div>

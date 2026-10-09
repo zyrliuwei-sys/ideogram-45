@@ -1081,5 +1081,12 @@
   "landing.studio.view_paint": "涂抹",
   "landing.studio.view_result": "结果",
   "landing.studio.settings": "参数",
-  "landing.drift.source": "起始原图，尚未编辑"
+  "landing.drift.source": "起始原图，尚未编辑",
+  "landing.studio.draft_save_failed": "草稿保存失败，请先下载原图并保留提示词，再重试登录或支付。",
+  "landing.studio.result_save_failed": "锁定区域的结果尚未保存到历史，请先下载当前图片。",
+  "payment.return.pending": "正在确认支付到账。积分到账后会通知你，请勿重复付款。",
+  "payment.return.unconfirmed": "暂未确认支付成功。如已扣款，请到订单页面查看，勿重复付款。",
+  "payment.return.confirmed": "支付已确认，积分已到账。可以继续生成了。",
+  "payment.return.dismiss": "收起",
+  "common.sign.google_trial": "首次通过 Google 创建账号，赠送一次标准画质体验。邮箱注册不赠送。"
 }

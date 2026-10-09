@@ -2,7 +2,7 @@ import { createFileRoute } from '@tanstack/react-router';
 
 import { FalProvider } from '@/core/ai';
 import { getAuth } from '@/core/auth';
-import { AITaskStatus, findTask } from '@/modules/ai-tasks/service';
+import { AITaskStatus, findTask, settleTask } from '@/modules/ai-tasks/service';
 import { getAllConfigs } from '@/modules/config/service';
 import { respData, respErr } from '@/lib/resp';
 
@@ -26,6 +26,14 @@ async function GET({ request }: { request: Request }) {
       task.model !== STUDIO_MODEL
     ) {
       return respErr('Task not found');
+    }
+    if (task.status === AITaskStatus.FAILED) {
+      // Retry a transient refund failure; revoke is idempotent.
+      await settleTask({
+        taskId: task.id,
+        status: AITaskStatus.FAILED,
+        taskResult: JSON.parse(task.taskResult || '{}'),
+      });
     }
     if (
       task.status === AITaskStatus.SUCCESS ||

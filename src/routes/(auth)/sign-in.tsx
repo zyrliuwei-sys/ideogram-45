@@ -193,6 +193,11 @@ function SignInPage() {
                         {m['common.sign.google_sign_in']()}
                       </Button>
                     )}
+                    {googleEnabled && (
+                      <p className="text-muted-foreground text-xs">
+                        {m['common.sign.google_trial']()}
+                      </p>
+                    )}
                     {githubEnabled && (
                       <Button
                         variant="outline"

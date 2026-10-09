@@ -18,6 +18,7 @@ import {
   type PaymentEvent,
   type PaymentOrder,
 } from '@/core/payment/types';
+import { envConfigs } from '@/config';
 import { credit, order, subscription } from '@/config/db/schema';
 import { getAllConfigs } from '@/modules/config/service';
 import { calculateCreditExpirationTime } from '@/modules/credits/service';
@@ -129,8 +130,9 @@ async function getPaymentManager(): Promise<PaymentManager> {
       new PayPalProvider({
         clientId: c('paypal_client_id'),
         clientSecret: c('paypal_client_secret'),
-        environment:
-          c('paypal_environment') === 'live' ? 'production' : 'sandbox',
+        environment: ['live', 'production'].includes(c('paypal_environment'))
+          ? 'production'
+          : 'sandbox',
         webhookId: c('paypal_webhook_id') || undefined,
       }),
       isDefault
@@ -396,12 +398,13 @@ async function handleCheckoutSuccess(session: any, provider: string) {
     };
 
     // Atomically update order + create subscription + grant credits
-    await db().transaction(async (tx: any) => {
+    const apply = async (tx: any, batch = false) => {
+      const statements: any[] = [];
       // 1. Create subscription if applicable
       if (subscriptionInfo && session.subscriptionId) {
-        const subNo = getSnowId();
+        const subNo = `checkout:${existingOrder.orderNo}`;
         const newSub: any = {
-          id: getUuid(),
+          id: `checkout:${existingOrder.orderNo}`,
           subscriptionNo: subNo,
           userId: existingOrder.userId,
           userEmail:
@@ -427,7 +430,15 @@ async function handleCheckoutSuccess(session: any, provider: string) {
           paymentProductId: existingOrder.paymentProductId,
           paymentUserId: paymentInfo?.paymentUserId,
         };
-        await tx.insert(subscription).values(newSub);
+        statements.push(
+          tx
+            .insert(subscription)
+            .values(newSub)
+            .onConflictDoUpdate({
+              target: subscription.id,
+              set: { id: newSub.id },
+            })
+        );
         orderUpdate.subscriptionNo = subNo;
         orderUpdate.subscriptionId = session.subscriptionId;
         orderUpdate.subscriptionResult = JSON.stringify(
@@ -443,32 +454,44 @@ async function handleCheckoutSuccess(session: any, provider: string) {
           currentPeriodEnd: subscriptionInfo?.currentPeriodEnd,
         });
 
-        await tx.insert(credit).values({
-          id: getUuid(),
-          userId: existingOrder.userId,
-          userEmail: existingOrder.userEmail || '',
-          orderNo: existingOrder.orderNo,
-          subscriptionNo: orderUpdate.subscriptionNo || '',
-          transactionNo: getSnowId(),
-          transactionType: 'grant',
-          transactionScene:
-            existingOrder.paymentType === 'subscription'
-              ? 'subscription'
-              : 'payment',
-          credits,
-          remainingCredits: credits,
-          description: 'Grant credit',
-          expiresAt,
-          status: 'active',
-        });
+        statements.push(
+          tx
+            .insert(credit)
+            .values({
+              id: `checkout:${existingOrder.orderNo}`,
+              userId: existingOrder.userId,
+              userEmail: existingOrder.userEmail || '',
+              orderNo: existingOrder.orderNo,
+              subscriptionNo: orderUpdate.subscriptionNo || '',
+              transactionNo: `checkout:${existingOrder.orderNo}`,
+              transactionType: 'grant',
+              transactionScene:
+                existingOrder.paymentType === 'subscription'
+                  ? 'subscription'
+                  : 'payment',
+              credits,
+              remainingCredits: credits,
+              description: 'Grant credit',
+              expiresAt,
+              status: 'active',
+            })
+            .onConflictDoUpdate({
+              target: credit.id,
+              set: { id: `checkout:${existingOrder.orderNo}` },
+            })
+        );
       }
 
       // 3. Update order
-      await tx
-        .update(order)
-        .set(orderUpdate)
-        .where(eq(order.id, existingOrder.id));
-    });
+      statements.push(
+        tx.update(order).set(orderUpdate).where(eq(order.id, existingOrder.id))
+      );
+      if (batch) await tx.batch(statements);
+      else for (const statement of statements) await statement;
+    };
+    // D1 has no interactive transactions: use its real atomic batch API.
+    if (envConfigs.database_provider === 'd1') await apply(db(), true);
+    else await db().transaction((tx: any) => apply(tx));
   } else if (
     session.paymentStatus === PaymentStatus.FAILED ||
     session.paymentStatus === PaymentStatus.CANCELED
@@ -689,4 +712,26 @@ export async function getUserOrders(userId: string) {
     .from(order)
     .where(and(eq(order.userId, userId), isNull(order.deletedAt)))
     .orderBy(desc(order.createdAt));
+}
+
+/** Read-only checkout confirmation; never trusts amounts/status from return URLs. */
+export async function getCheckoutStatus(userId: string, orderNo: string) {
+  const [result] = await db()
+    .select({
+      orderNo: order.orderNo,
+      status: order.status,
+      amount: order.amount,
+      currency: order.currency,
+      productId: order.productId,
+    })
+    .from(order)
+    .where(
+      and(
+        eq(order.userId, userId),
+        eq(order.orderNo, orderNo),
+        isNull(order.deletedAt)
+      )
+    )
+    .limit(1);
+  return result ?? null;
 }

@@ -1081,5 +1081,12 @@
   "landing.studio.view_paint": "Paint",
   "landing.studio.view_result": "Result",
   "landing.studio.settings": "Settings",
-  "landing.drift.source": "Starting image, before any edit"
+  "landing.drift.source": "Starting image, before any edit",
+  "landing.studio.draft_save_failed": "Could not save your draft. Keep your original image and prompt before retrying sign-in or checkout.",
+  "landing.studio.result_save_failed": "The locked result was not saved to history. Download the current image to keep it.",
+  "payment.return.pending": "Confirming your payment. We will notify you when credits arrive. Please do not pay again.",
+  "payment.return.unconfirmed": "Payment is not confirmed yet. If you were charged, check your orders before paying again.",
+  "payment.return.confirmed": "Payment confirmed. Your credits are ready.",
+  "payment.return.dismiss": "Dismiss",
+  "common.sign.google_trial": "New accounts created with Google get one standard-quality trial. Email sign-up does not include a trial."
 }

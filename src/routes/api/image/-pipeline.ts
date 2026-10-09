@@ -19,7 +19,12 @@ import {
   type AspectRatio,
   type IdeogramTier,
 } from '@/config/ideogram';
-import { AITaskStatus, findTask, updateTask } from '@/modules/ai-tasks/service';
+import {
+  AITaskStatus,
+  findTask,
+  settleTask,
+  updateTask,
+} from '@/modules/ai-tasks/service';
 import { getStorage } from '@/modules/storage/service';
 
 /** aiTask.model for every studio task (history + cron filter on it). */
@@ -176,7 +181,7 @@ async function persistImages(taskId: string, images: { url: string }[]) {
 
 /** Failing a task refunds its credits (ai-tasks updateTask → revoke). */
 export async function failTask(taskId: string, message: string) {
-  await updateTask({
+  await settleTask({
     taskId,
     status: AITaskStatus.FAILED,
     taskResult: { error: message },
@@ -220,7 +225,7 @@ export async function advance(taskId: string, provider: FalProvider) {
     if (!images.length) {
       await failTask(task.id, 'No image returned');
     } else {
-      await updateTask({
+      await settleTask({
         taskId: task.id,
         status: AITaskStatus.SUCCESS,
         taskResult: { images: await persistImages(task.id, images) },

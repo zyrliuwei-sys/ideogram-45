@@ -1,7 +1,11 @@
 import { createFileRoute } from '@tanstack/react-router';
 
+import { getAuth } from '@/core/auth';
 import { getAllConfigs } from '@/modules/config/service';
-import { handlePaymentCallback } from '@/modules/payment/service';
+import {
+  getCheckoutStatus,
+  handlePaymentCallback,
+} from '@/modules/payment/service';
 
 /**
  * GET /api/payment/callback?order_no=xxx&redirect=xxx
@@ -36,17 +40,31 @@ async function GET({ request }: { request: Request }) {
   const fallback = `${appUrl}/settings/billing`;
 
   try {
-    if (orderNo) {
+    const session = await getAuth().api.getSession({
+      headers: request.headers,
+    });
+    if (
+      orderNo &&
+      session?.user &&
+      (await getCheckoutStatus(session.user.id, orderNo))
+    ) {
       await handlePaymentCallback(orderNo);
     }
   } catch (error: any) {
     console.error('payment callback error:', error);
   }
 
+  const destination = new URL(
+    resolveSameOriginRedirect(redirect, fallback, appUrl)
+  );
+  for (const key of ['paid', 'plan', 'value', 'success'])
+    destination.searchParams.delete(key);
+  if (orderNo && orderNo.length <= 100)
+    destination.searchParams.set('paid', orderNo);
   return new Response(null, {
     status: 302,
     headers: {
-      Location: resolveSameOriginRedirect(redirect, fallback, appUrl),
+      Location: destination.toString(),
     },
   });
 }

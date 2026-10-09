@@ -66,6 +66,8 @@ export async function createTask(params: {
       });
 
       if (!result.success) {
+        // D1 has already inserted the task; remove it when the balance race is lost.
+        await tx.delete(aiTask).where(eq(aiTask.id, task.id));
         throw new Error('Insufficient credits');
       }
 
@@ -279,4 +281,33 @@ export async function getUserTasksPage(params: {
     db().select({ n: count() }).from(aiTask).where(where),
   ]);
   return { items: items as AiTask[], total: Number(totals[0]?.n ?? 0) };
+}
+
+/** Settle a studio task once so a late poll cannot overwrite a locked result. */
+export async function settleTask(params: {
+  taskId: string;
+  status: AITaskStatus.SUCCESS | AITaskStatus.FAILED;
+  taskResult: unknown;
+}) {
+  const task = await findTask(params.taskId);
+  if (!task) return false;
+  const changed = await db()
+    .update(aiTask)
+    .set({
+      status: params.status,
+      taskResult: JSON.stringify(params.taskResult),
+    })
+    .where(
+      and(
+        eq(aiTask.id, params.taskId),
+        inArray(aiTask.status, [AITaskStatus.PENDING, AITaskStatus.PROCESSING])
+      )
+    )
+    .returning({ id: aiTask.id });
+  if (!changed.length && task.status !== AITaskStatus.FAILED) return false;
+  if (params.status === AITaskStatus.FAILED && task.taskInfo) {
+    const info = JSON.parse(task.taskInfo);
+    if (info.creditId) await revoke(info.creditId);
+  }
+  return changed.length > 0;
 }

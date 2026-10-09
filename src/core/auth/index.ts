@@ -11,7 +11,7 @@ import { WelcomeEmail } from '@/core/email/templates/welcome-email';
 import { AUTH_SECRET_PLACEHOLDER, envConfigs } from '@/config';
 import * as schema from '@/config/db/schema';
 import { getAllConfigs } from '@/modules/config/service';
-import { grantForNewUser } from '@/modules/credits/service';
+import { grantGoogleTrial } from '@/modules/credits/service';
 import { grantRoleForNewUser } from '@/modules/rbac/service';
 import {
   getClientIpFromCtx,
@@ -32,6 +32,12 @@ function assertProductionAuthSecret() {
     );
   }
 }
+
+// Request-scoped registration evidence: linking an existing account never sets it.
+const registrations = new WeakMap<
+  object,
+  { id: string; email: string; emailVerified: boolean }
+>();
 
 const recentVerificationEmailSentAt = new Map<string, number>();
 const VERIFICATION_EMAIL_MIN_INTERVAL_MS = 60_000;
@@ -168,10 +174,7 @@ async function sendWelcomeEmail(
 
     const appName = configs.app_name || envConfigs.app_name;
     const appUrl = configs.app_url || envConfigs.app_url;
-    const credits =
-      configs.initial_credits_enabled === 'true'
-        ? parseInt(configs.initial_credits_amount) || 0
-        : 0;
+    const credits = 0; // Email registration does not receive trial credits.
     const zh = (user.locale || '').startsWith('zh');
 
     const result = await emailCtx.provider.sendEmail({
@@ -329,7 +332,8 @@ export function getAuth(configs?: Record<string, string>) {
               },
             };
           },
-          after: async (createdUser: any) => {
+          after: async (createdUser: any, ctx: any) => {
+            if (ctx) registrations.set(ctx, createdUser);
             // Onboarding side effects. Read configs fresh: authInstance is
             // cached, so the `configs` captured at build time can be stale
             // after an admin settings save.
@@ -348,17 +352,27 @@ export function getAuth(configs?: Record<string, string>) {
               console.error('[auth] grant default role failed', error);
             }
 
+            await sendWelcomeEmail(createdUser, all);
+          },
+        },
+      },
+      account: {
+        create: {
+          after: async (createdAccount, ctx) => {
+            const registered = ctx ? registrations.get(ctx) : undefined;
+            if (!registered || registered.id !== createdAccount.userId) return;
             try {
-              await grantForNewUser({
-                userId: createdUser.id,
-                userEmail: createdUser.email,
-                configs: all,
+              await grantGoogleTrial({
+                userId: registered.id,
+                userEmail: registered.email,
+                emailVerified: registered.emailVerified,
+                providerId: createdAccount.providerId,
+                isNewRegistration: true,
+                configs: await getAllConfigs(),
               });
             } catch (error) {
-              console.error('[auth] grant signup credits failed', error);
+              console.error('[auth] Google trial grant failed', error);
             }
-
-            await sendWelcomeEmail(createdUser, all);
           },
         },
       },

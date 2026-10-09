@@ -1,7 +1,21 @@
-import { and, asc, desc, eq, gt, isNull, or, sql, sum } from 'drizzle-orm';
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  getTableColumns,
+  gt,
+  isNull,
+  or,
+  sql,
+  sum,
+} from 'drizzle-orm';
 
 import { db } from '@/core/db';
+import { envConfigs } from '@/config';
 import { credit } from '@/config/db/schema';
+import { resolveTierCredits } from '@/config/ideogram';
+import { isGoogleTrialEligible } from '@/lib/google-trial';
 import { getSnowId, getUuid } from '@/lib/hash';
 
 // --- Enums ---
@@ -123,6 +137,101 @@ export async function consume(params: {
     tx,
   } = params;
   const now = new Date();
+  if (!Number.isSafeInteger(amount) || amount <= 0) return { success: false };
+
+  if (envConfigs.database_provider === 'd1') {
+    // D1 serializes each batch atomically. Insert the consumption only when
+    // every source balance still matches, then deduct only if that insert won.
+    for (let attempt = 0; attempt < 4; attempt++) {
+      const grants = await db()
+        .select()
+        .from(credit)
+        .where(validCreditConditions(userId))
+        .orderBy(
+          sql`case when ${credit.expiresAt} is null then 1 else 0 end`,
+          asc(credit.expiresAt),
+          asc(credit.createdAt)
+        )
+        .limit(10000);
+      let remaining = amount;
+      const items: {
+        creditId: string;
+        transactionNo: string;
+        creditsConsumed: number;
+        creditsBefore: number;
+        creditsAfter: number;
+      }[] = [];
+      for (const source of grants) {
+        if (remaining <= 0) break;
+        const used = Math.min(remaining, source.remainingCredits);
+        items.push({
+          creditId: source.id,
+          transactionNo: source.transactionNo,
+          creditsConsumed: used,
+          creditsBefore: source.remainingCredits,
+          creditsAfter: source.remainingCredits - used,
+        });
+        remaining -= used;
+      }
+      if (remaining > 0 || !items.length) return { success: false };
+      const consumedCredit: NewCredit = {
+        id: getUuid(),
+        userId,
+        userEmail: userEmail || '',
+        transactionNo: getSnowId(),
+        transactionType: CreditTransactionType.CONSUME,
+        transactionScene: scene || '',
+        status: CreditStatus.ACTIVE,
+        description: description || '',
+        credits: -amount,
+        remainingCredits: 0,
+        consumedDetail: JSON.stringify(items),
+        metadata: metadata || '',
+        createdAt: now,
+        updatedAt: now,
+      };
+      const selection = Object.fromEntries(
+        Object.keys(getTableColumns(credit)).map((key) => {
+          const value = consumedCredit[key as keyof NewCredit];
+          return [
+            key,
+            sql`${value instanceof Date ? value.getTime() : (value ?? null)}`,
+          ];
+        })
+      );
+      // JSON keeps bound parameters and expression depth constant across many grants.
+      const unchanged = sql`not exists (
+        select 1 from json_each(${JSON.stringify(items)}) as snapshot
+        left join ${credit} as source_grant on source_grant.id = json_extract(snapshot.value, '$.creditId')
+        where source_grant.id is null
+          or source_grant.remaining_credits <> json_extract(snapshot.value, '$.creditsBefore')
+          or source_grant.status <> ${CreditStatus.ACTIVE}
+          or (source_grant.expires_at is not null and source_grant.expires_at <= ${now.getTime()})
+      )`;
+      const insert = db()
+        .insert(credit)
+        .select(
+          db()
+            .select(selection)
+            .from(credit)
+            .where(and(eq(credit.id, items[0].creditId), unchanged))
+            .limit(1)
+        )
+        .returning();
+      const won = sql`exists (select 1 from ${credit} as consumption where consumption.id = ${consumedCredit.id})`;
+      const updates = items.map((item) =>
+        db()
+          .update(credit)
+          .set({
+            remainingCredits: sql`${credit.remainingCredits} - ${item.creditsConsumed}`,
+          })
+          .where(and(eq(credit.id, item.creditId), won))
+      );
+      const results = await db().batch([insert, ...updates]);
+      if (results[0].length) return { success: true, consumedCredit };
+    }
+    return { success: false };
+  }
 
   const execute = async (tx: any) => {
     // 1. Check balance
@@ -163,7 +272,10 @@ export async function consume(params: {
             or(isNull(credit.expiresAt), gt(credit.expiresAt, now))
           )
         )
-        .orderBy(asc(credit.expiresAt))
+        .orderBy(
+          sql`case when ${credit.expiresAt} is null then 1 else 0 end`,
+          asc(credit.expiresAt)
+        )
         .limit(batchSize)
         .for('update');
 
@@ -235,54 +347,64 @@ export async function revoke(consumeCreditId: string) {
 
   const items = JSON.parse(consumeRecord.consumedDetail);
 
-  await db().transaction(async (tx: any) => {
-    // Atomic increment per source grant — no read-modify-write race.
-    for (const item of items) {
-      await tx
+  const apply = async (tx: any, batch = false) => {
+    const eligible = sql`exists (select 1 from ${credit} as refund_source where refund_source.id = ${consumeCreditId} and refund_source.status = ${CreditStatus.ACTIVE} and refund_source.transaction_type = ${CreditTransactionType.CONSUME})`;
+    const statements = items.map(
+      (item: { creditId: string; creditsConsumed: number }) =>
+        tx
+          .update(credit)
+          .set({
+            remainingCredits: sql`${credit.remainingCredits} + ${item.creditsConsumed}`,
+          })
+          .where(and(eq(credit.id, item.creditId), eligible))
+    );
+    statements.push(
+      tx
         .update(credit)
-        .set({
-          remainingCredits: sql`${credit.remainingCredits} + ${item.creditsConsumed}`,
-        })
-        .where(eq(credit.id, item.creditId));
-    }
-
-    // Mark consumption record as deleted
-    await tx
-      .update(credit)
-      .set({ status: CreditStatus.DELETED })
-      .where(eq(credit.id, consumeCreditId));
-  });
+        .set({ status: CreditStatus.DELETED })
+        .where(
+          and(
+            eq(credit.id, consumeCreditId),
+            eq(credit.status, CreditStatus.ACTIVE)
+          )
+        )
+    );
+    if (batch) await tx.batch(statements);
+    else for (const statement of statements) await statement;
+  };
+  if (envConfigs.database_provider === 'd1') await apply(db(), true);
+  else await db().transaction((tx: any) => apply(tx));
 }
 
-// --- Auto-grant for new user ---
-
-export async function grantForNewUser(params: {
+// One standard-quality trial, only for a verified Google-created account.
+export async function grantGoogleTrial(params: {
   userId: string;
-  userEmail?: string;
+  userEmail: string;
+  providerId: string;
+  emailVerified: boolean;
+  isNewRegistration: boolean;
   configs: Record<string, string>;
 }) {
-  const { userId, userEmail, configs } = params;
-
-  if (configs.initial_credits_enabled !== 'true') return;
-
-  const credits = parseInt(configs.initial_credits_amount) || 0;
-  if (credits <= 0) return;
-
-  const validDays = parseInt(configs.initial_credits_valid_days) || 0;
-  const description = configs.initial_credits_description || 'Initial credits';
-
-  const expiresAt = calculateCreditExpirationTime({
-    creditsValidDays: validDays,
-  });
-
-  return grant({
-    userId,
-    userEmail,
-    credits,
-    description,
-    scene: CreditTransactionScene.GIFT,
-    expiresAt,
-  });
+  if (!isGoogleTrialEligible(params)) return;
+  const credits = resolveTierCredits(params.configs, 'standard');
+  const id = `google-trial:${params.userId}`;
+  // Deterministic unique key makes hook retries harmless, including after spending.
+  await db()
+    .insert(credit)
+    .values({
+      id,
+      userId: params.userId,
+      userEmail: params.userEmail,
+      transactionNo: id,
+      transactionType: CreditTransactionType.GRANT,
+      transactionScene: CreditTransactionScene.GIFT,
+      credits,
+      remainingCredits: credits,
+      status: CreditStatus.ACTIVE,
+      description: 'Google signup: one standard-quality generation',
+      expiresAt: null,
+    })
+    .onConflictDoUpdate({ target: credit.id, set: { id } });
 }
 
 // --- History ---

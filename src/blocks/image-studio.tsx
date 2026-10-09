@@ -31,6 +31,8 @@ import {
   ASPECT_RATIOS,
   DEFAULT_ASPECT,
   DEFAULT_TIER_CREDITS,
+  isAspectRatio,
+  isIdeogramTier,
   MAX_PROMPT_CHARS,
   type AspectRatio,
   type IdeogramTier,
@@ -38,6 +40,11 @@ import {
 } from '@/config/ideogram';
 import { EXAMPLE_PROMPTS, RANDOM_PROMPTS } from '@/config/studio-prompts';
 import { apiGet, apiPost } from '@/lib/api-client';
+import {
+  readStudioDraft,
+  registerStudioDraftSaver,
+  writeStudioDraft,
+} from '@/lib/studio-draft';
 import { onStudioPrompt } from '@/lib/studio-events';
 import { track } from '@/lib/track';
 import { cn } from '@/lib/utils';
@@ -205,22 +212,6 @@ function readDraft(): { prompt?: string; mode?: Mode } {
   }
 }
 
-function saveDraft(draft: { prompt: string; mode: Mode }) {
-  try {
-    sessionStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
-  } catch {
-    // Storage unavailable (private mode) — the draft is a convenience only.
-  }
-}
-
-function clearDraft() {
-  try {
-    sessionStorage.removeItem(DRAFT_KEY);
-  } catch {
-    // ignore
-  }
-}
-
 export function ImageStudio() {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -258,7 +249,86 @@ export function ImageStudio() {
     prompt: string;
   } | null>(null);
 
-  // Restore a prompt typed before the sign-in round trip.
+  const [draftReady, setDraftReady] = useState(false);
+  const restoredMask = useRef<string | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const draft = await readStudioDraft();
+        if (cancelled) return;
+        if (draft) {
+          setPrompt(
+            typeof draft.prompt === 'string'
+              ? draft.prompt.slice(0, MAX_PROMPT_CHARS)
+              : ''
+          );
+          setMode(draft.mode === 'edit' ? 'edit' : 'generate');
+          if (isIdeogramTier(draft.tier)) setTier(draft.tier);
+          if (isAspectRatio(draft.aspect)) setAspect(draft.aspect);
+          setExpand(draft.expand === true);
+          setLockOn(draft.lockOn !== false);
+          if (
+            draft.source?.png?.startsWith('data:image/png;') &&
+            draft.source.width > 0 &&
+            draft.source.width <= MAX_SIDE &&
+            draft.source.height > 0 &&
+            draft.source.height <= MAX_SIDE
+          ) {
+            restoredMask.current = draft.mask;
+            setSource(draft.source);
+          }
+        } else {
+          const legacy = readDraft();
+          if (legacy.prompt) setPrompt(legacy.prompt);
+          if (legacy.mode === 'edit') setMode('edit');
+        }
+      } catch {
+        const legacy = readDraft();
+        if (!cancelled && legacy.prompt) setPrompt(legacy.prompt);
+      } finally {
+        if (!cancelled) setDraftReady(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const persistDraft = useCallback(async () => {
+    if (!draftReady) return;
+    try {
+      await writeStudioDraft({
+        prompt,
+        mode,
+        tier,
+        aspect,
+        expand,
+        lockOn,
+        source,
+        mask:
+          source && maskRef.current
+            ? maskRef.current.toDataURL('image/png')
+            : null,
+      });
+    } catch {
+      // Text still survives when IndexedDB is unavailable; navigation warns below.
+      try {
+        sessionStorage.setItem(DRAFT_KEY, JSON.stringify({ prompt, mode }));
+      } catch {}
+      throw new Error(m['landing.studio.draft_save_failed']());
+    }
+  }, [draftReady, prompt, mode, tier, aspect, expand, lockOn, source]);
+
+  useEffect(() => registerStudioDraftSaver(persistDraft), [persistDraft]);
+  useEffect(() => {
+    if (!draftReady) return;
+    const timer = setTimeout(() => {
+      void persistDraft().catch(() => {});
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [persistDraft, painted, draftReady]);
+
   useEffect(() => {
     const draft = readDraft();
     if (draft.prompt) setPrompt(draft.prompt);
@@ -299,6 +369,19 @@ export function ImageStudio() {
     canvas.height = source.height;
     canvas.getContext('2d')!.clearRect(0, 0, source.width, source.height);
     setPainted(0);
+    const savedMask = restoredMask.current;
+    restoredMask.current = null;
+    if (savedMask) {
+      void loadImage(savedMask)
+        .then((image) => {
+          if (maskRef.current !== canvas) return;
+          canvas
+            .getContext('2d')!
+            .drawImage(image, 0, 0, source.width, source.height);
+          setPainted(paintedShare(canvas));
+        })
+        .catch(() => {});
+    }
   }, [source, mode]);
 
   const openPaywall = () => {
@@ -325,6 +408,11 @@ export function ImageStudio() {
     },
   });
 
+  const finalize = useMutation({
+    mutationFn: (body: { id: string; image: string }) =>
+      apiPost<StudioTask>('/api/image/finalize', body),
+  });
+  const [finishing, setFinishing] = useState(false);
   const taskQuery = useQuery({
     queryKey: ['image-task', taskId],
     queryFn: () => apiGet<StudioTask>(`/api/image/task?id=${taskId}`),
@@ -336,6 +424,7 @@ export function ImageStudio() {
   });
   const task = taskQuery.data;
   const working =
+    finishing ||
     generate.isPending ||
     (Boolean(taskId) &&
       task?.status !== 'success' &&
@@ -355,6 +444,7 @@ export function ImageStudio() {
     }
     if (task.status !== 'success' || !task.images[0]) return;
     finished.current = task.id;
+    setFinishing(true);
     const raw = task.images[0];
     const ctx = submitted.current;
     (async () => {
@@ -364,6 +454,16 @@ export function ImageStudio() {
         try {
           url = await pixelLock(ctx.source, raw, ctx.mask);
           locked = true;
+          try {
+            const saved = await finalize.mutateAsync({
+              id: task.id,
+              image: url,
+            });
+            url = saved.images[0] || url;
+            queryClient.invalidateQueries({ queryKey: ['studio-images'] });
+          } catch {
+            toast.error(m['landing.studio.result_save_failed']());
+          }
         } catch {
           toast.message(m['landing.studio.lock_unavailable']());
         }
@@ -373,6 +473,7 @@ export function ImageStudio() {
       setActivePass(task.id);
       setView('result');
       setTaskId(null);
+      setFinishing(false);
       track('generate_success', { mode: ctx?.source ? 'edit' : 'generate' });
     })();
   }, [task, queryClient]);
@@ -408,20 +509,28 @@ export function ImageStudio() {
     }
   }
 
-  function submit() {
+  async function submit() {
     const text = prompt.trim();
     if (!text) return toast.error(m['landing.studio.prompt_required']());
     if (mode === 'edit' && !source) {
       return toast.error(m['landing.studio.image_required']());
     }
     if (!signedIn) {
-      saveDraft({ prompt: text, mode });
+      try {
+        await persistDraft();
+      } catch (error) {
+        return toast.error((error as Error).message);
+      }
       router.push(`/sign-in?callbackUrl=${encodeURIComponent('/#create')}`);
       return;
     }
     // The server is the authority on balance (admins generate free); an
     // "Insufficient credits" reply opens the paywall.
-    clearDraft();
+    try {
+      await persistDraft();
+    } catch (error) {
+      return toast.error((error as Error).message);
+    }
     let mask: string | undefined;
     let maskSnapshot: HTMLCanvasElement | null = null;
     if (mode === 'edit' && maskRef.current && painted > 0) {
@@ -497,6 +606,7 @@ export function ImageStudio() {
     if (!drawing.current) return;
     drawing.current = null;
     if (maskRef.current) setPainted(paintedShare(maskRef.current));
+    void persistDraft().catch(() => {});
   }
   function clearMask() {
     const c = maskRef.current;

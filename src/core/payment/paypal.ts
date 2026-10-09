@@ -373,14 +373,6 @@ export class PayPalProvider implements PaymentProvider {
                 break;
               }
             }
-
-            // If still APPROVED after polling, treat it as success
-            // PayPal will activate it shortly
-            if (subscriptionResult.status === 'APPROVED') {
-              console.log(
-                'PayPal subscription still APPROVED after polling, treating as success'
-              );
-            }
           }
 
           return await this.buildPaymentSessionFromSubscription(
@@ -1032,10 +1024,10 @@ export class PayPalProvider implements PaymentProvider {
         breakdown?.discount?.currency_code ||
         saleEvent.amount?.currency_code ||
         '';
-      paymentAmount = saleEvent.amount?.value
-        ? Math.round(parseFloat(saleEvent.amount.value) * 100)
-        : 0;
-      paymentCurrency = saleEvent.amount?.currency_code || '';
+      const saleAmount = saleEvent.amount?.value ?? saleEvent.amount?.total;
+      paymentAmount = saleAmount ? Math.round(parseFloat(saleAmount) * 100) : 0;
+      paymentCurrency =
+        saleEvent.amount?.currency_code || saleEvent.amount?.currency || '';
       paidAt = saleEvent.create_time
         ? new Date(saleEvent.create_time)
         : undefined;
@@ -1049,12 +1041,20 @@ export class PayPalProvider implements PaymentProvider {
       paidAt = lastPayment.time ? new Date(lastPayment.time) : undefined;
     }
 
-    // For subscriptions, APPROVED means user has authorized, treat as SUCCESS
-    // PayPal will automatically activate the subscription
-    const subscriptionPaymentStatus =
-      subscription.status === 'APPROVED' || subscription.status === 'ACTIVE'
-        ? PaymentStatus.SUCCESS
-        : this.mapPayPalStatus(subscription.status);
+    // Approval/activation is authorization, not evidence of a captured payment.
+    const hasPayment =
+      paymentAmount > 0 &&
+      Boolean(paymentCurrency) &&
+      Boolean(paidAt && Number.isFinite(paidAt.getTime())) &&
+      (!saleEvent ||
+        saleEvent.state === 'completed' ||
+        saleEvent.status === 'COMPLETED');
+    const mappedStatus = this.mapPayPalStatus(subscription.status);
+    const subscriptionPaymentStatus = hasPayment
+      ? PaymentStatus.SUCCESS
+      : mappedStatus === PaymentStatus.SUCCESS
+        ? PaymentStatus.PROCESSING
+        : mappedStatus;
 
     const result: PaymentSession = {
       provider: this.name,
