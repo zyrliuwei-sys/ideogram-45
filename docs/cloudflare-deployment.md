@@ -13,6 +13,7 @@ trigger a deployment.
 - Deploy command: `pnpm exec wrangler deploy`
 - Build watch include paths: `*` (all changes)
 - Preview builds: disabled
+- Build variable: `PNPM_VERSION=11.15.1` (matches `package.json`)
 
 `cf:ci:build` recreates the ignored `wrangler.jsonc` and `.env.production` from
 the tracked `wrangler.production.json`, then builds the Cloudflare Worker.
